@@ -5,6 +5,7 @@ import java.io.RandomAccessFile;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 /**
  * @说明 打印收到的数据包，并且将数据原封返回，中间设置休眠表示执行耗时
  * @author 郭宇飞
@@ -12,6 +13,8 @@ import java.util.Arrays;
  * @since
  */
 class ServiceImpl implements Runnable {
+	private static final int paketheadlen = 23;
+	private static final int ackpaketheadlen = 12;
 	private DatagramPacket packet;
 	public ServiceImpl(DatagramPacket packet){
 		this.packet = packet;
@@ -45,7 +48,7 @@ class ServiceImpl implements Runnable {
     public int parsepacket(byte[] pt)
     {
     	int ret = 0;
-    	String filePath = "C:\\Server\\";
+    	String filePath = "D:\\temp\\";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
@@ -54,7 +57,7 @@ class ServiceImpl implements Runnable {
     	byte[] btTemp = new byte[4];
     	btTemp = new byte[4];
 	    System.arraycopy(pt, 0, btTemp, 0, 4);  //取出4个字节
-	    int len = StreamTool.bytesToInt(btTemp);  //设备ID    	
+	    int len = StreamTool.bytesToInt(btTemp);  //数据包总长度    	
     	if(len != pt.length)
     	{
     		return ret;
@@ -87,23 +90,40 @@ class ServiceImpl implements Runnable {
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 15, btTemp, 0, 4);   //发送的图片名，不能太长，浪费资源
 		    	    Integer name = StreamTool.bytesToInt(btTemp);
-		    	    String nameStr = name.toString();
-		    	    
+		    	    String nameStr = name.toString();		    	    
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 19, btTemp, 0, 4);  //取出4个字节
 		    	    short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
-		    	    
+		    	    filePath += String.valueOf(deviceID); //按照设备ID将图片分别存放
+		    	    filePath += "\\";
+		    	    //如果设备ID的文件夹不存在就创建
+		    	    try {
+		    	    	   if (!(new File(filePath).isDirectory())) {
+		    	    	    new File(filePath).mkdir();
+		    	    	   }
+		    	    	  } catch (SecurityException e) {
+		    	    	   e.printStackTrace();
+		    	    }
 		    	    File file = new File(filePath + nameStr + ".jpg");
 		    	    if(!file.exists()) file.createNewFile(); // 不存在就创建新文件
 		    	    RandomAccessFile fdf = new RandomAccessFile(filePath + nameStr + ".jpg", "rw");
 		    	    fdf.seek(currentpacketnum * UdpService.sendLen); // 跳过索引部分 ，因为如果图片没发完，每次发送的大小是固定的
 		    	    //目前定的私有协议包头有23字节，所以从第23字节开始取数据，依次放入文件
-		    	    byte[] btFile = new byte[pt.length - 23];
-		    	    System.arraycopy(pt, 23, btFile, 0, pt.length - 23);
+		    	    byte[] btFile = new byte[pt.length - paketheadlen];
+		    	    System.arraycopy(pt, paketheadlen, btFile, 0, pt.length - paketheadlen);
+		    	    //如果收到的是end包，就给终端APP发推送消息
+		    	    String srt2=new String(btFile,"UTF-8");		    	    
+		    	    if(srt2.equals("end")) {		    	    	
+						System.out.println("文件接收完毕");		
+						//推送消息给终端APP
+						mqttserver myMqtt = mqttserver.getInstance();
+						myMqtt.sedMessage();
+						break;
+					}
 		    	    fdf.write(btFile);  //写入文件
 		    	    fdf.close();
-		    	    ByteBuffer bf = ByteBuffer.allocate(12);
-		    	    short temp = 12;
+		    	    ByteBuffer bf = ByteBuffer.allocate(ackpaketheadlen);
+		    	    short temp = ackpaketheadlen;
 		    	    bf.put(StreamTool.shortToByte(temp));    // 总长度   //可能还需要确认，修改
 		    	    bf.put((byte) 11);    //11，对应16进制是BH，表示该包是图片的确认包
 		    	    bf.put(StreamTool.shortToByte(totalpacketnum));    // 总包数
