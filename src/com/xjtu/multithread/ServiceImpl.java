@@ -48,7 +48,7 @@ class ServiceImpl implements Runnable {
     public int parsepacket(byte[] pt)
     {
     	int ret = 0;
-    	String filePath = "D:\\temp\\";
+    	String filePath = "C:\\Server\\";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
