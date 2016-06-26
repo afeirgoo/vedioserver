@@ -8,9 +8,9 @@ import java.net.SocketException;
 import java.util.Arrays;
 /**
  * @说明 UDP连接服务端，这里一个包就做一个线程处理
- * @author 郭宇飞
+ * @author afeirgoo
  * @version 1.0
- * @since
+ * @since   2016-6-26
  */
 public class UdpService {
 	public static void main(String[] args) {

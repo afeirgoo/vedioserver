@@ -10,7 +10,12 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-
+/**
+ * @说明  Mqtt消息中间件
+ * @author afeirgoo
+ * @version 1.0
+ * @since   2016-6-26
+ */
 
 public class mqttserver {
 	private String host = "tcp://localhost:61613";

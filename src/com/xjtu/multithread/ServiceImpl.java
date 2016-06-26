@@ -4,17 +4,20 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Date;
 
 /**
  * @说明 打印收到的数据包，并且将数据原封返回，中间设置休眠表示执行耗时
- * @author 郭宇飞
+ * @author afeirgoo
  * @version 1.0
- * @since
+ * @since   2016-6-26
  */
 class ServiceImpl implements Runnable {
-	private static final int paketheadlen = 23;
+	private static final int paketheadlen = 19;
 	private static final int ackpaketheadlen = 12;
+	private static final int ackheartpaketheadlen = 26;
 	private DatagramPacket packet;
 	public ServiceImpl(DatagramPacket packet){
 		this.packet = packet;
@@ -48,26 +51,54 @@ class ServiceImpl implements Runnable {
     public int parsepacket(byte[] pt)
     {
     	int ret = 0;
+    	int deviceID = 0;
     	String filePath = "C:\\Server\\";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
     		return ret;
     	}
-    	byte[] btTemp = new byte[4];
-    	btTemp = new byte[4];
-	    System.arraycopy(pt, 0, btTemp, 0, 4);  //取出4个字节
-	    int len = StreamTool.bytesToInt(btTemp);  //数据包总长度    	
+    	byte[] btTemp = new byte[2];
+    	btTemp = new byte[2];
+	    System.arraycopy(pt, 0, btTemp, 0, 2);  //取出4个字节
+	    int len = StreamTool.byteToShort(btTemp);  //数据包总长度    	
     	if(len != pt.length)
     	{
     		return ret;
     	}    	
-    	
-    	switch(pt[6])
+    	byte versionid = pt[2];
+    	byte devicetype = pt[3];
+    	switch(pt[4])
     	{
 	    	case 1: 
 	    	    //这是一个心跳包,要提取ID维护设备状态
 	    		ret = 1;
+	    		btTemp = new byte[4];
+	    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
+	    	    deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
+	    	    byte[] str_MM = new byte[16];
+	    	    System.arraycopy(pt, 9, str_MM, 0, 16);  //取出16个字节
+	    	    byte[] str_STA = new byte[len - 26];
+	    	    System.arraycopy(pt, 25, str_STA, 0, (len - 26));  //取出(len - 26)个字节
+	    	    byte flag = pt[len - 1]; //标志位是最后一字节
+	    	    System.out.println(len);	
+	    	    System.out.println(str_MM.toString());	
+	    	    System.out.println(str_STA.toString());	
+	    	    //构造返回包
+	    	    ByteBuffer bf = ByteBuffer.allocate(ackheartpaketheadlen);
+	    	    short temp = ackheartpaketheadlen;
+	    	    bf.put(StreamTool.shortToByte(temp));    // 总长度   //可能还需要确认，修改
+	    	    bf.put(versionid);    //版本号
+	    	    bf.put(devicetype);    //设备类型
+	    	    bf.put((byte) 1);    //1对应16进制是1H，表示该包是心跳包的确认包
+	    	    bf.put((byte) 1);    //确认结果
+	    	    String time = (new Timestamp(new Date().getTime())).toString().subSequence(0, 19).toString();	    	    
+	    	    bf.put(time.getBytes());    // 时间戳 	    
+	    	    
+	    	    bf.put((byte) 5);     //成功   	       	    
+	    	    //这里实际上要给发送方回复, 以便客户端继续发送
+	    	    packet.setData(bf.array());
+	    	    UdpService.response(packet);
 	    		break;
 	    	case 9:
 	    		//这是设备执行命令之后给服务器的返回信息,用于控制者知道设备执行情况
@@ -78,21 +109,21 @@ class ServiceImpl implements Runnable {
 	    		try{
 		    		ret = 10;
 		    		btTemp = new byte[4];
-		    	    System.arraycopy(pt, 7, btTemp, 0, 4);  //取出4个字节
-		    	    int deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
+		    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
+		    	    deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
 		    	    byte[] smallbtTemp = new byte[2];
-		    	    System.arraycopy(pt, 11, smallbtTemp, 0, 2);  //取出2个字节
+		    	    System.arraycopy(pt, 9, smallbtTemp, 0, 2);  //取出2个字节
 		    	    short totalpacketnum = StreamTool.byteToShort(smallbtTemp);
 		    	    smallbtTemp = new byte[2];
-		    	    System.arraycopy(pt, 13, smallbtTemp, 0, 2);  //取出2个字节
+		    	    System.arraycopy(pt, 11, smallbtTemp, 0, 2);  //取出2个字节
 		    	    short currentpacketnum = StreamTool.byteToShort(smallbtTemp);   //当前包序号
 		    	    System.out.println("Server rev " + currentpacketnum);
 		    	    btTemp = new byte[4];
-		    	    System.arraycopy(pt, 15, btTemp, 0, 4);   //发送的图片名，不能太长，浪费资源
+		    	    System.arraycopy(pt, 13, btTemp, 0, 4);   //发送的图片名，不能太长，浪费资源
 		    	    Integer name = StreamTool.bytesToInt(btTemp);
 		    	    String nameStr = name.toString();		    	    
 		    	    btTemp = new byte[4];
-		    	    System.arraycopy(pt, 19, btTemp, 0, 4);  //取出4个字节
+		    	    System.arraycopy(pt, 17, btTemp, 0, 2);  //取出2个字节
 		    	    short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
 		    	    filePath += String.valueOf(deviceID); //按照设备ID将图片分别存放
 		    	    filePath += "\\";
@@ -108,10 +139,13 @@ class ServiceImpl implements Runnable {
 		    	    if(!file.exists()) file.createNewFile(); // 不存在就创建新文件
 		    	    RandomAccessFile fdf = new RandomAccessFile(filePath + nameStr + ".jpg", "rw");
 		    	    fdf.seek(currentpacketnum * UdpService.sendLen); // 跳过索引部分 ，因为如果图片没发完，每次发送的大小是固定的
-		    	    //目前定的私有协议包头有23字节，所以从第23字节开始取数据，依次放入文件
+		    	    //目前定的私有协议包头有19字节，所以从第19字节开始取数据，依次放入文件
 		    	    byte[] btFile = new byte[pt.length - paketheadlen];
 		    	    System.arraycopy(pt, paketheadlen, btFile, 0, pt.length - paketheadlen);
-		    	    //如果收到的是end包，就给终端APP发推送消息
+		    	    //每次都执行随机写入，并且关闭文件句柄
+		    	    fdf.write(btFile);  //写入文件
+		    	    fdf.close();
+		    	  //如果收到的是end包，就给终端APP发推送消息
 		    	    String srt2=new String(btFile,"UTF-8");		    	    
 		    	    if(srt2.equals("end")) {		    	    	
 						System.out.println("文件接收完毕");		
@@ -120,10 +154,9 @@ class ServiceImpl implements Runnable {
 						myMqtt.sedMessage();
 						break;
 					}
-		    	    fdf.write(btFile);  //写入文件
-		    	    fdf.close();
-		    	    ByteBuffer bf = ByteBuffer.allocate(ackpaketheadlen);
-		    	    short temp = ackpaketheadlen;
+		    	    //返回确认包
+		    	    bf = ByteBuffer.allocate(ackpaketheadlen);
+		    	    temp = ackpaketheadlen;
 		    	    bf.put(StreamTool.shortToByte(temp));    // 总长度   //可能还需要确认，修改
 		    	    bf.put((byte) 11);    //11，对应16进制是BH，表示该包是图片的确认包
 		    	    bf.put(StreamTool.shortToByte(totalpacketnum));    // 总包数

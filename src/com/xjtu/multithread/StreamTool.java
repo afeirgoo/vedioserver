@@ -13,9 +13,9 @@ import java.nio.ByteBuffer;
  * Java 常用流处理工具
  * </pre>
  * 
- * @project baidamei
- * @author cevencheng <cevencheng@gmail.com> www.zuidaima.com
- * @create 2012-11-29 下午5:17:32
+ * @project udpservice@vedionetwork
+ * @author afeirgoo
+ * @create 2016-6-23
  */
 public class StreamTool {
 	
