@@ -34,7 +34,7 @@ class ServiceImpl implements Runnable {
 			//Thread.sleep(1 * 1000); // 5秒才返回，标识服务端在处理数据
 			// 设置回复的数据，原数据返回，以便客户端知道是那个客户端发送的数据
 			packet.setData(bt);
-			UdpService.response(packet);
+			//UdpService.response(packet);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -64,8 +64,8 @@ class ServiceImpl implements Runnable {
 	    System.arraycopy(pt, 0, btTemp, 0, 2);  //取出2个字节	
 	    ByteBuffer buffer =  ByteBuffer.wrap(btTemp); 
 	    //System.out.println(buffer.getShort()); 
-	    int len = buffer.getShort();
-	    //int len = StreamTool.byteToShort(btTemp);  //数据包总长度    
+	    //int len = buffer.getShort();
+	    int len = StreamTool.byteToShort(btTemp);  //数据包总长度    
 	    byte[] str_MM;
 	    byte[] str_STA;
 	    byte flag;
@@ -115,11 +115,13 @@ class ServiceImpl implements Runnable {
 	    		btTemp = new byte[4];
 	    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    int userID = buffer.getInt();
+	    	    //int userID = buffer.getInt();
+	    	    int userID = StreamTool.bytesToInt(btTemp);
 	    	    btTemp = new byte[4];
 	    	    System.arraycopy(pt, 9, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    int ID = buffer.getInt();
+	    	    //int ID = buffer.getInt();
+	    	    int ID = StreamTool.bytesToInt(btTemp);
 	    	    str_MM = new byte[16];
 	    	    System.arraycopy(pt, 13, str_MM, 0, 16);  //取出16个字节
 	    	    str_STA = new byte[len - 30];
@@ -149,30 +151,31 @@ class ServiceImpl implements Runnable {
 		    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 		    	    buffer =  ByteBuffer.wrap(btTemp); 
 		    	    deviceID = buffer.getInt();
-		    	    //deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
+		    	    deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
 		    	    byte[] smallbtTemp = new byte[2];
 		    	    System.arraycopy(pt, 9, smallbtTemp, 0, 2);  //取出2个字节
 		    	    buffer =  ByteBuffer.wrap(smallbtTemp); 
 		    	    
-		    	    //short totalpacketnum = StreamTool.byteToShort(smallbtTemp);
-		    	    short totalpacketnum = buffer.getShort();
+		    	    short totalpacketnum = StreamTool.byteToShort(smallbtTemp);
+		    	    //short totalpacketnum = buffer.getShort();
 		    	    smallbtTemp = new byte[2];
 		    	    System.arraycopy(pt, 11, smallbtTemp, 0, 2);  //取出2个字节
 		    	    buffer =  ByteBuffer.wrap(smallbtTemp);
-		    	    //short currentpacketnum = StreamTool.byteToShort(smallbtTemp);   //当前包序号
-		    	    short currentpacketnum = buffer.getShort();
+		    	    short currentpacketnum = StreamTool.byteToShort(smallbtTemp);   //当前包序号
+		    	    //short currentpacketnum = buffer.getShort();
 		    	    System.out.println("Server rev " + currentpacketnum);
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 13, btTemp, 0, 4);   //发送的图片名，不能太长，浪费资源
 		    	    buffer =  ByteBuffer.wrap(btTemp);
-		    	    //Integer name = StreamTool.bytesToInt(btTemp);
-		    	    Integer name = buffer.getInt();
+		    	    Integer name = StreamTool.bytesToInt(btTemp);
+		    	    //Integer name = buffer.getInt();
 		    	    String nameStr = name.toString();		    	    
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 17, btTemp, 0, 2);  //取出2个字节
-		    	    //short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
+		    	    //
 		    	    buffer =  ByteBuffer.wrap(btTemp);
-		    	    short datalength = buffer.getShort();
+		    	    //short datalength = buffer.getShort();
+		    	    short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
 		    	    filePath += String.valueOf(deviceID); //按照设备ID将图片分别存放
 		    	    filePath += "\\";
 		    	    //如果设备ID的文件夹不存在就创建
@@ -194,8 +197,9 @@ class ServiceImpl implements Runnable {
 		    	    fdf.write(btFile);  //写入文件
 		    	    fdf.close();
 		    	  //如果收到的是end包，就给终端APP发推送消息
-		    	    String srt2=new String(btFile,"UTF-8");		    	    
-		    	    if(srt2.equals("end")) {		    	    	
+		    	    String srt2=new String(btFile,"UTF-8");	
+		    	    if(totalpacketnum == currentpacketnum || srt2.equals("end"))
+		    	    {	//System.out.println(srt2);  	    	
 						System.out.println("文件接收完毕");		
 						//推送消息给终端APP
 						mqttserver myMqtt = mqttserver.getInstance();
