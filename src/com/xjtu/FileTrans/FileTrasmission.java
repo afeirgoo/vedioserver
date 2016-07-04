@@ -11,7 +11,7 @@ public class FileTrasmission {
 
 //程序入口
 public static void main(String[] args) throws Exception { 
-int port = 6000; 
+int port = 7788; 
 new Server(port, "D://temp//").start(); 
 //new Client().sendFile("127.0.0.1", port, "d://杩峰け鍦ㄥ悍鐔欐湯骞�.txt"); 
 } 

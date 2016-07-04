@@ -18,11 +18,12 @@ public class UdpService {
 			init();
 			while(true){
 				try {
-					byte[] buffer = new byte[1024 * 2]; // 缓冲区
+					byte[] buffer = new byte[1024 * 16]; // 缓冲区
 					DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 					receive(packet);
 					new Thread(new ServiceImpl(packet)).start();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
 				//Thread.sleep(1 * 1000);
 			}
@@ -67,7 +68,7 @@ public class UdpService {
 			//创建DatagramSocket对象
 			datagramSocket = new DatagramSocket(port, socketAddress);
 			
-			datagramSocket.setSoTimeout(1 * 1000);
+			//datagramSocket.setSoTimeout(5 * 1000);
 			System.out.println("服务端已经启动");
 		} catch (Exception e) {
 			datagramSocket = null;

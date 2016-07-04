@@ -87,7 +87,7 @@ public class mqttserver {
 			message = new MqttMessage();
 			message.setQos(1);
 			message.setRetained(true);
-			message.setPayload(("I send a message to phone, Time:"+ filename +System.currentTimeMillis()).getBytes());
+			message.setPayload(("Vehicle Message: Picture name:"+ filename).getBytes());
 			topic = client.getTopic(myTopic);
 			MqttDeliveryToken token = topic.publish(message);//发布主题
 			token.waitForCompletion();

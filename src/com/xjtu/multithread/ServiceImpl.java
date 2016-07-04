@@ -53,7 +53,8 @@ class ServiceImpl implements Runnable {
     {
     	int ret = 0;
     	int deviceID = 0;
-    	String filePath = "C:\\Server\\";
+    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";
+    	//String filePath = "/var/server/";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
@@ -188,14 +189,19 @@ class ServiceImpl implements Runnable {
 		    	    }
 		    	    File file = new File(filePath + nameStr + ".jpg");
 		    	    if(!file.exists()) file.createNewFile(); // 不存在就创建新文件
-		    	    RandomAccessFile fdf = new RandomAccessFile(filePath + nameStr + ".jpg", "rw");
-		    	    fdf.seek(currentpacketnum * UdpService.sendLen); // 跳过索引部分 ，因为如果图片没发完，每次发送的大小是固定的
-		    	    //目前定的私有协议包头有19字节，所以从第19字节开始取数据，依次放入文件
 		    	    byte[] btFile = new byte[pt.length - paketheadlen];
+		    	    //目前定的私有协议包头有19字节，所以从第19字节开始取数据，依次放入文件
+		    	    
 		    	    System.arraycopy(pt, paketheadlen, btFile, 0, pt.length - paketheadlen);
-		    	    //每次都执行随机写入，并且关闭文件句柄
-		    	    fdf.write(btFile);  //写入文件
-		    	    fdf.close();
+		    	    try { 
+			    	    RandomAccessFile fdf = new RandomAccessFile(filePath + nameStr + ".jpg", "rw");
+			    	    fdf.seek(currentpacketnum * UdpService.sendLen); // 跳过索引部分 ，因为如果图片没发完，每次发送的大小是固定的			    	    
+			    	    //每次都执行随机写入，并且关闭文件句柄
+			    	    fdf.write(btFile);  //写入文件
+			    	    fdf.close();
+		    	    } catch (Exception e) {  
+		                e.printStackTrace();  
+		            }  
 		    	  //如果收到的是end包，就给终端APP发推送消息
 		    	    String srt2=new String(btFile,"UTF-8");	
 		    	    if(totalpacketnum == currentpacketnum || srt2.equals("end"))
@@ -203,7 +209,7 @@ class ServiceImpl implements Runnable {
 						System.out.println("文件接收完毕");		
 						//推送消息给终端APP
 						mqttserver myMqtt = mqttserver.getInstance();
-						myMqtt.sedMessage();
+						myMqtt.sedMessage(nameStr);
 						break;
 					}
 		    	    //返回确认包
