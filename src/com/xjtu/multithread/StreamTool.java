@@ -124,7 +124,22 @@ public class StreamTool {
         }  
         return b;  
     }  
-  
+    /** 
+     * @功能 短整型与字节的转换 
+     * @param 短整型 
+     * @return 两位的字节数组 
+     * @author afeirgoo
+     */  
+    public static byte[] short2byte(short number) {  
+        int temp = number;  
+        byte[] b = new byte[2];  
+        for (int i = b.length -1; i >= 0; i--) {  
+            b[i] = new Integer(temp & 0xff).byteValue();// 将最低位保存在最低位  
+            temp = temp >> 8; // 向右移8位  
+        }  
+        return b;  
+    }  
+     
     /** 
      * @功能 字节的转换与短整型 
      * @param 两位的字节数组 
@@ -134,6 +149,20 @@ public class StreamTool {
         short s = 0;  
         short s0 = (short) (b[0] & 0xff);// 最低位  
         short s1 = (short) (b[1] & 0xff);  
+        s1 <<= 8;  
+        s = (short) (s0 | s1);  
+        return s;  
+    }
+    /** 
+     * @功能 字节的转换与短整型 
+     * @param 两位的字节数组 
+     * @return 短整型 
+     * @author afeirgoo
+     */  
+    public static short byte2Short(byte[] b) {  
+        short s = 0;  
+        short s0 = (short) (b[1] & 0xff);// 最低位  
+        short s1 = (short) (b[0] & 0xff);  
         s1 <<= 8;  
         s = (short) (s0 | s1);  
         return s;  
@@ -152,6 +181,20 @@ public class StreamTool {
         bt[3] = (byte) ((0xff000000 & i) >> 24);  
         return bt;  
     }  
+    /** 
+     * @方法功能 整型与字节数组的转换 
+     * @param 整型 
+     * @return 四位的字节数组 
+     * @author afeirgoo
+     */  
+    public static byte[] int2byte(int i) {  
+        byte[] bt = new byte[4];  
+        bt[3] = (byte) (0xff & i);  
+        bt[2] = (byte) ((0xff00 & i) >> 8);  
+        bt[1] = (byte) ((0xff0000 & i) >> 16);  
+        bt[0] = (byte) ((0xff000000 & i) >> 24);  
+        return bt;  
+    } 
   
     /** 
      * @方法功能 字节数组和整型的转换 
@@ -164,6 +207,19 @@ public class StreamTool {
         num |= ((bytes[1] << 8) & 0xFF00);  
         num |= ((bytes[2] << 16) & 0xFF0000);  
         num |= ((bytes[3] << 24) & 0xFF000000);  
+        return num;  
+    }  
+    /** 
+     * @方法功能 字节数组和整型的转换 
+     * @param 字节数组 
+     * @return 整型 
+     * @author afeirgoo
+     */  
+    public static int bytes2Int(byte[] bytes) {  
+        int num = bytes[3] & 0xFF;  
+        num |= ((bytes[2] << 8) & 0xFF00);  
+        num |= ((bytes[1] << 16) & 0xFF0000);  
+        num |= ((bytes[0] << 24) & 0xFF000000);  
         return num;  
     }  
   

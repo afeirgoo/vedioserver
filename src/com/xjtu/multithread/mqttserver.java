@@ -24,7 +24,7 @@ public class mqttserver {
 	private MqttClient client;
 	private static mqttserver instance = new mqttserver();
 	private MqttTopic topic;
-	private String myTopic = "Topics/xjtu/serverToPhone";
+	private String myTopic = "Topics/xjtu/serverToPhone/";
 	private MqttMessage message;
 	
 	public static mqttserver getInstance(){
@@ -82,13 +82,18 @@ public class mqttserver {
 			e.printStackTrace();
 		}
 	}
-	public void sedMessage(String filename){
+	public void sedMessage(String filename,int iDeviceid){
+		if(filename == null || iDeviceid <= 0)
+		{
+			return;
+		}
+		String uTopic = myTopic + String.valueOf(iDeviceid); 
 		try {
 			message = new MqttMessage();
 			message.setQos(1);
 			message.setRetained(true);
-			message.setPayload(("Vehicle Message: Picture name:"+ filename).getBytes());
-			topic = client.getTopic(myTopic);
+			message.setPayload(("Vehicle Message, Picture name:"+ filename).getBytes());
+			topic = client.getTopic(uTopic);
 			MqttDeliveryToken token = topic.publish(message);//发布主题
 			token.waitForCompletion();
 		} catch (MqttPersistenceException e) {

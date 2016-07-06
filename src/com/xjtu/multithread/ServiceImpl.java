@@ -38,6 +38,7 @@ class ServiceImpl implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.gc();
 	}
 	
 	/**
@@ -60,13 +61,13 @@ class ServiceImpl implements Runnable {
     	{
     		return ret;
     	}
-    	byte[] btTemp = new byte[2];
-    	btTemp = new byte[2];
-	    System.arraycopy(pt, 0, btTemp, 0, 2);  //取出2个字节	
-	    ByteBuffer buffer =  ByteBuffer.wrap(btTemp); 
+    	byte[] sbtTemp = new byte[2];   
+    	
+	    System.arraycopy(pt, 0, sbtTemp, 0, 2);  //取出2个字节	
+	    ByteBuffer buffer =  ByteBuffer.wrap(sbtTemp); 
 	    //System.out.println(buffer.getShort()); 
-	    //int len = buffer.getShort();
-	    int len = StreamTool.byteToShort(btTemp);  //数据包总长度    
+	    short len = buffer.getShort();
+	    //int len = StreamTool.byteToShort(btTemp);  //数据包总长度    
 	    byte[] str_MM;
 	    byte[] str_STA;
 	    byte flag;
@@ -81,7 +82,7 @@ class ServiceImpl implements Runnable {
 	    	case 1: 
 	    	    //这是一个心跳包,要提取ID维护设备状态
 	    		ret = 1;
-	    		btTemp = new byte[4];
+	    		byte[] btTemp = new byte[4];
 	    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
 	    	    deviceID = buffer.getInt();
@@ -97,7 +98,7 @@ class ServiceImpl implements Runnable {
 	    	    //构造返回包
 	    	    ByteBuffer bf = ByteBuffer.allocate(ackheartpaketheadlen);
 	    	    short temp = ackheartpaketheadlen;
-	    	    bf.put(StreamTool.shortToByte(temp));    // 总长度   //可能还需要确认，修改
+	    	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
 	    	    bf.put(versionid);    //版本号
 	    	    bf.put(devicetype);    //设备类型
 	    	    bf.put((byte) 1);    //1对应16进制是1H，表示该包是心跳包的确认包
@@ -116,13 +117,13 @@ class ServiceImpl implements Runnable {
 	    		btTemp = new byte[4];
 	    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    //int userID = buffer.getInt();
-	    	    int userID = StreamTool.bytesToInt(btTemp);
+	    	    int userID = buffer.getInt();
+	    	    //int userID = StreamTool.bytesToInt(btTemp);
 	    	    btTemp = new byte[4];
 	    	    System.arraycopy(pt, 9, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    //int ID = buffer.getInt();
-	    	    int ID = StreamTool.bytesToInt(btTemp);
+	    	    int ID = buffer.getInt();
+	    	    //int ID = StreamTool.bytesToInt(btTemp);
 	    	    str_MM = new byte[16];
 	    	    System.arraycopy(pt, 13, str_MM, 0, 16);  //取出16个字节
 	    	    str_STA = new byte[len - 30];
@@ -131,7 +132,7 @@ class ServiceImpl implements Runnable {
 	    	    
 	    	    ByteBuffer ackbf = ByteBuffer.allocate(7);
 	    	    short templen = 7;
-	    	    ackbf.put(StreamTool.shortToByte(templen));    // 总长度   //可能还需要确认，修改
+	    	    ackbf.put(StreamTool.short2byte(templen));    // 总长度   //可能还需要确认，修改
 	    	    ackbf.put(versionid);    //版本号
 	    	    ackbf.put(devicetype);    //设备类型
 	    	    ackbf.put((byte) 9);    //9对应16进制是9H，表示该包是设备执行结果包的确认包
@@ -140,6 +141,7 @@ class ServiceImpl implements Runnable {
 	    	    ackbf.put((byte) 5);     //成功   	       	    
 	    	    //这里实际上要给发送方回复, 以便客户端继续发送
 	    	    packet.setData(ackbf.array());
+	    	    
 	    	    UdpService.response(packet);  		
 	    		
 	    		
@@ -152,31 +154,31 @@ class ServiceImpl implements Runnable {
 		    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 		    	    buffer =  ByteBuffer.wrap(btTemp); 
 		    	    deviceID = buffer.getInt();
-		    	    deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
+		    	    //deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
 		    	    byte[] smallbtTemp = new byte[2];
 		    	    System.arraycopy(pt, 9, smallbtTemp, 0, 2);  //取出2个字节
 		    	    buffer =  ByteBuffer.wrap(smallbtTemp); 
 		    	    
-		    	    short totalpacketnum = StreamTool.byteToShort(smallbtTemp);
-		    	    //short totalpacketnum = buffer.getShort();
+		    	    //short totalpacketnum = StreamTool.byteToShort(smallbtTemp);
+		    	    short totalpacketnum = buffer.getShort();
 		    	    smallbtTemp = new byte[2];
 		    	    System.arraycopy(pt, 11, smallbtTemp, 0, 2);  //取出2个字节
 		    	    buffer =  ByteBuffer.wrap(smallbtTemp);
-		    	    short currentpacketnum = StreamTool.byteToShort(smallbtTemp);   //当前包序号
-		    	    //short currentpacketnum = buffer.getShort();
+		    	    //short currentpacketnum = StreamTool.byteToShort(smallbtTemp);   //当前包序号
+		    	    short currentpacketnum = buffer.getShort();
 		    	    System.out.println("Server rev " + currentpacketnum);
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 13, btTemp, 0, 4);   //发送的图片名，不能太长，浪费资源
 		    	    buffer =  ByteBuffer.wrap(btTemp);
-		    	    Integer name = StreamTool.bytesToInt(btTemp);
-		    	    //Integer name = buffer.getInt();
+		    	    //Integer name = StreamTool.bytesToInt(btTemp);
+		    	    Integer name = buffer.getInt();
 		    	    String nameStr = name.toString();		    	    
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 17, btTemp, 0, 2);  //取出2个字节
 		    	    //
 		    	    buffer =  ByteBuffer.wrap(btTemp);
-		    	    //short datalength = buffer.getShort();
-		    	    short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
+		    	    short datalength = buffer.getShort();
+		    	    //short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
 		    	    filePath += String.valueOf(deviceID); //按照设备ID将图片分别存放
 		    	    filePath += "\\";
 		    	    //如果设备ID的文件夹不存在就创建
@@ -209,20 +211,21 @@ class ServiceImpl implements Runnable {
 						System.out.println("文件接收完毕");		
 						//推送消息给终端APP
 						mqttserver myMqtt = mqttserver.getInstance();
-						myMqtt.sedMessage(nameStr);
+						myMqtt.sedMessage(nameStr,deviceID);
 						break;
 					}
 		    	    //返回确认包
 		    	    bf = ByteBuffer.allocate(ackpaketheadlen);
 		    	    temp = ackpaketheadlen;
-		    	    bf.put(StreamTool.shortToByte(temp));    // 总长度   //可能还需要确认，修改
+		    	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
 		    	    bf.put((byte) 11);    //11，对应16进制是BH，表示该包是图片的确认包
-		    	    bf.put(StreamTool.shortToByte(totalpacketnum));    // 总包数
-		    	    bf.put(StreamTool.shortToByte(currentpacketnum)); // 当前包的索引
-		    	    bf.put(StreamTool.intToByte(name));  // 名称
+		    	    bf.put(StreamTool.short2byte(totalpacketnum));    // 总包数
+		    	    bf.put(StreamTool.short2byte(currentpacketnum)); // 当前包的索引
+		    	    bf.put(StreamTool.int2byte(name));  // 名称
 		    	    bf.put((byte) 1);     //成功   	       	    
 		    	    //这里实际上要给发送方回复, 以便客户端继续发送
 		    	    packet.setData(bf.array());
+		    	    System.out.println(Arrays.toString(bf.array()));
 		    	    UdpService.response(packet);
 	    		}catch (Exception e) {
 	    			e.printStackTrace();

@@ -78,5 +78,5 @@ public class UdpService {
 	}
 	private static InetAddress socketAddress = null; // 服务监听个地址
 	private static DatagramSocket datagramSocket = null; // 连接对象
-	public static int sendLen = 1000;
+	public static int sendLen = 1200;
 }
