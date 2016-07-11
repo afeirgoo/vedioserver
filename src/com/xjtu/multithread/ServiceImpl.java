@@ -29,9 +29,7 @@ class ServiceImpl implements Runnable {
 			System.arraycopy(packet.getData(), 0, bt, 0, packet.getLength());
 			System.out.println(packet.getAddress().getHostAddress() + "：" + packet.getPort() + "：" + Arrays.toString(bt));
 			//处理收到的数据报文
-			parsepacket(bt);
-			
-			//Thread.sleep(1 * 1000); // 5秒才返回，标识服务端在处理数据
+			parsepacket(bt);			
 			// 设置回复的数据，原数据返回，以便客户端知道是那个客户端发送的数据
 			packet.setData(bt);
 			//UdpService.response(packet);
@@ -54,8 +52,7 @@ class ServiceImpl implements Runnable {
     {
     	int ret = 0;
     	int deviceID = 0;
-    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";
-    	//String filePath = "/var/server/";
+    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    	
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
@@ -64,13 +61,12 @@ class ServiceImpl implements Runnable {
     	byte[] sbtTemp = new byte[2];   
     	
 	    System.arraycopy(pt, 0, sbtTemp, 0, 2);  //取出2个字节	
-	    ByteBuffer buffer =  ByteBuffer.wrap(sbtTemp); 
-	    //System.out.println(buffer.getShort()); 
-	    short len = buffer.getShort();
-	    //int len = StreamTool.byteToShort(btTemp);  //数据包总长度    
+	    ByteBuffer buffer =  ByteBuffer.wrap(sbtTemp); 	    
+	    short len = buffer.getShort();	     
 	    byte[] str_MM;
 	    byte[] str_STA;
 	    byte flag;
+	    int   userid;
     	if(len != pt.length)
     	{
     		return ret;
@@ -85,16 +81,12 @@ class ServiceImpl implements Runnable {
 	    		byte[] btTemp = new byte[4];
 	    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    deviceID = buffer.getInt();
-	    	    //deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
+	    	    deviceID = buffer.getInt();//设备ID	    	     
 	    	    str_MM = new byte[16];
 	    	    System.arraycopy(pt, 9, str_MM, 0, 16);  //取出16个字节
 	    	    str_STA = new byte[len - 26];
 	    	    System.arraycopy(pt, 25, str_STA, 0, (len - 26));  //取出(len - 26)个字节
-	    	    flag = pt[len - 1]; //标志位是最后一字节
-	    	    //System.out.println(len);	
-	    	    //System.out.println(str_MM.toString());	
-	    	    //System.out.println(str_STA.toString());	
+	    	    flag = pt[len - 1]; //标志位是最后一字节	    	   
 	    	    //构造返回包
 	    	    ByteBuffer bf = ByteBuffer.allocate(ackheartpaketheadlen);
 	    	    short temp = ackheartpaketheadlen;
@@ -110,6 +102,9 @@ class ServiceImpl implements Runnable {
 	    	    //这里实际上要给发送方回复, 以便客户端继续发送
 	    	    packet.setData(bf.array());
 	    	    UdpService.response(packet);
+	    	    //更新车机的IP地址
+	    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
+	    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
 	    		break;
 	    	case 9:
 	    		//这是设备执行命令之后给服务器的返回信息,用于控制者知道设备执行情况
@@ -117,13 +112,11 @@ class ServiceImpl implements Runnable {
 	    		btTemp = new byte[4];
 	    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    int userID = buffer.getInt();
-	    	    //int userID = StreamTool.bytesToInt(btTemp);
+	    	    int userID = buffer.getInt();	    	    
 	    	    btTemp = new byte[4];
 	    	    System.arraycopy(pt, 9, btTemp, 0, 4);  //取出4个字节
 	    	    buffer =  ByteBuffer.wrap(btTemp); 
-	    	    int ID = buffer.getInt();
-	    	    //int ID = StreamTool.bytesToInt(btTemp);
+	    	    int ID = buffer.getInt();	    	    
 	    	    str_MM = new byte[16];
 	    	    System.arraycopy(pt, 13, str_MM, 0, 16);  //取出16个字节
 	    	    str_STA = new byte[len - 30];
@@ -144,41 +137,37 @@ class ServiceImpl implements Runnable {
 	    	    
 	    	    UdpService.response(packet);  		
 	    		
-	    		
+	    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
+	    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
 	    		break;
 	    	case 10:
 	    		//这是发图片,要提取图片数据，等待完全收完后重组图片
 	    		try{
-		    		ret = 10;
-		    		btTemp = new byte[4];
+		    		ret = 10;		    		
+		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
 		    	    buffer =  ByteBuffer.wrap(btTemp); 
-		    	    deviceID = buffer.getInt();
-		    	    //deviceID = StreamTool.bytesToInt(btTemp);  //设备ID
+		    	    deviceID = buffer.getInt();  //设备id 
+		    	    
 		    	    byte[] smallbtTemp = new byte[2];
 		    	    System.arraycopy(pt, 9, smallbtTemp, 0, 2);  //取出2个字节
-		    	    buffer =  ByteBuffer.wrap(smallbtTemp); 
-		    	    
-		    	    //short totalpacketnum = StreamTool.byteToShort(smallbtTemp);
+		    	    buffer =  ByteBuffer.wrap(smallbtTemp); 		    	    
 		    	    short totalpacketnum = buffer.getShort();
 		    	    smallbtTemp = new byte[2];
 		    	    System.arraycopy(pt, 11, smallbtTemp, 0, 2);  //取出2个字节
-		    	    buffer =  ByteBuffer.wrap(smallbtTemp);
-		    	    //short currentpacketnum = StreamTool.byteToShort(smallbtTemp);   //当前包序号
+		    	    buffer =  ByteBuffer.wrap(smallbtTemp);		    	    
 		    	    short currentpacketnum = buffer.getShort();
 		    	    System.out.println("Server rev " + currentpacketnum);
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 13, btTemp, 0, 4);   //发送的图片名，不能太长，浪费资源
-		    	    buffer =  ByteBuffer.wrap(btTemp);
-		    	    //Integer name = StreamTool.bytesToInt(btTemp);
+		    	    buffer =  ByteBuffer.wrap(btTemp);		    	    
 		    	    Integer name = buffer.getInt();
 		    	    String nameStr = name.toString();		    	    
 		    	    btTemp = new byte[4];
 		    	    System.arraycopy(pt, 17, btTemp, 0, 2);  //取出2个字节
 		    	    //
 		    	    buffer =  ByteBuffer.wrap(btTemp);
-		    	    short datalength = buffer.getShort();
-		    	    //short datalength = StreamTool.byteToShort(btTemp);   //纯图片数据的长度
+		    	    short datalength = buffer.getShort();		    	    
 		    	    filePath += String.valueOf(deviceID); //按照设备ID将图片分别存放
 		    	    filePath += "\\";
 		    	    //如果设备ID的文件夹不存在就创建
@@ -227,6 +216,44 @@ class ServiceImpl implements Runnable {
 		    	    packet.setData(bf.array());
 		    	    System.out.println(Arrays.toString(bf.array()));
 		    	    UdpService.response(packet);
+		    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
+		    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+	    		}catch (Exception e) {
+	    			e.printStackTrace();
+	    		} 
+	    		
+	    		break;
+	    	case 26:
+	    		//这是app发起的控制命令
+	    		try{
+		    		ret = 26;
+		    		btTemp = new byte[4];
+		    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
+		    	    buffer =  ByteBuffer.wrap(btTemp); 
+		    	    userid = buffer.getInt();  //Userid 
+		    	    
+		    		btTemp = new byte[4];
+		    	    System.arraycopy(pt, 9, btTemp, 0, 4);  //取出4个字节
+		    	    buffer =  ByteBuffer.wrap(btTemp); 
+		    	    deviceID = buffer.getInt();  //设备ID		
+		    	    flag = pt[len - 1]; //标志位是最后一字节    
+		    	    
+		    	    //返回确认包
+		    	    bf = ByteBuffer.allocate(14);
+		    	    temp = 14;
+		    	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
+		    	    bf.put((byte) 2);    //2，对应16进制是2H，表示该包的版本号
+		    	    bf.put((byte) 53);    //S，对应ASC是大写的S，表示该包的设备类型为服务器下发
+		    	    bf.put((byte) 26);    //26，对应16进制是1AH，表示该包是APP命令的确认包
+		    	    bf.put(StreamTool.int2byte(userid));    // 总包数
+		    	    bf.put(StreamTool.int2byte(deviceID)); // 当前包的索引
+		    	    bf.put((byte) 1);     //成功   	       	    
+		    	    //这里实际上要给发送方回复, 以便客户端继续发送
+		    	    packet.setData(bf.array());
+		    	    System.out.println(Arrays.toString(bf.array()));
+		    	    UdpService.response(packet);
+		    	    //处理过返回包，就要将命令下发到车机设备
+		    	    UdpService.sendCMD(deviceID,flag);
 	    		}catch (Exception e) {
 	    			e.printStackTrace();
 	    		} 
