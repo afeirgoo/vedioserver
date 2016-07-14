@@ -30,6 +30,7 @@ public class UdpService {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+				
 				//Thread.sleep(1 * 1000);
 			}
 		} catch (Exception e) {
@@ -73,7 +74,7 @@ public class UdpService {
 			//创建DatagramSocket对象
 			datagramSocket = new DatagramSocket(port, socketAddress);
 			
-			//datagramSocket.setSoTimeout(5 * 1000);
+			//datagramSocket.setSoTimeout(1000);
 			System.out.println("服务端已经启动");
 		} catch (Exception e) {
 			datagramSocket = null;
@@ -170,11 +171,11 @@ public class UdpService {
 		 }
 		try {
 			//组装datagramSocket
-			@SuppressWarnings("resource")
-			DatagramSocket cmdgramSocket = new DatagramSocket(caddr.getport(), caddr.getip());
+			@SuppressWarnings("resource")			
 			byte[] cmdbuffer = new byte[6]; // 缓冲区
 			DatagramPacket cmdpacket = new DatagramPacket(cmdbuffer, cmdbuffer.length);
-			
+			cmdpacket.setAddress(caddr.getip());
+			cmdpacket.setPort(caddr.getport());
 			ByteBuffer bf = ByteBuffer.allocate(6);
 			short temp = 6;
     	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
@@ -183,7 +184,7 @@ public class UdpService {
     	    bf.put((byte) 26);    //26，对应16进制是1AH，表示该包是APP命令的确认包    	   
     	    bf.put(cmdindxe);     //命令   	       	    
     	    cmdpacket.setData(bf.array());    	    
-    	    cmdgramSocket.send(cmdpacket);			
+    	    datagramSocket.send(cmdpacket);			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -52,7 +52,8 @@ class ServiceImpl implements Runnable {
     {
     	int ret = 0;
     	int deviceID = 0;
-    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    	
+    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    
+    	//String filePath = "D:\\apache-tomcat-8.0.33\\webapps\\VedioServer\\images\\";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
@@ -102,6 +103,29 @@ class ServiceImpl implements Runnable {
 	    	    //这里实际上要给发送方回复, 以便客户端继续发送
 	    	    packet.setData(bf.array());
 	    	    UdpService.response(packet);
+	    	    
+	    	    
+	    	    /*	    	   
+				try {
+					Thread.sleep(2 * 1000);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+	    	     ByteBuffer endbf = ByteBuffer.allocate(3 + paketheadlen);
+		    	 endbf.put(StreamTool.short2byte((short)(3 + paketheadlen))); // 总长度
+		    	 endbf.put((byte) 1);  //版本号
+		    	 endbf.put((byte) 1);  //设备类型
+		    	 endbf.put((byte) 10);  //数据类型，10表示为图片
+		    	 endbf.put(StreamTool.int2byte(67));            // 设备ID		    	
+		    	 endbf.put(StreamTool.short2byte((short)3));               // 净数据长度
+		    	 byte[] buf = new byte[3];
+		    	 buf = "end".getBytes();
+		    	 endbf.put(buf);
+			     byte[] endbySd = endbf.array();
+			     packet.setData(bf.array());
+		    	 UdpService.response(packet);
+		    	 */
 	    	    //更新车机的IP地址
 	    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
 	    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
