@@ -189,6 +189,42 @@ public class UdpService {
 			e.printStackTrace();
 		}
 	}
+	//控制开关命令
+	public static void sendPwrCMD(int deviceid,byte[] cmd) 
+	{
+		ClientAddr caddr;
+		//首先在clientAddressMap中查找设备ID对应的地址，找到了就可以发送cmd，找不到就直接退出
+		 if(clientAddressMap.containsKey(String.valueOf(deviceid)))
+		 {
+			 //这个device已经保存过，这里不管是否一样，都做更新操作
+			 caddr = clientAddressMap.get(String.valueOf(deviceid));
+			 
+		 }
+		 else
+		 {
+			 return;
+		 }
+		try {
+			//组装datagramSocket
+			@SuppressWarnings("resource")			
+			byte[] cmdbuffer = new byte[6]; // 缓冲区
+			DatagramPacket cmdpacket = new DatagramPacket(cmdbuffer, cmdbuffer.length);
+			cmdpacket.setAddress(caddr.getip());
+			cmdpacket.setPort(caddr.getport());
+			ByteBuffer bf = ByteBuffer.allocate(6);
+			short temp = 6;
+    	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
+    	    bf.put((byte) 2);    //2，对应16进制是2H，表示该包的版本号
+    	    bf.put((byte) 53);    //S，对应ASC是大写的S，表示该包的设备类型为服务器下发
+    	    bf.put((byte) 8);    //8，对应16进制是08H，表示该包是APP命令    	   
+    	    bf.put(cmd);     //命令   	
+    	    bf.put((byte) 5);     //结尾的5H   	    
+    	    cmdpacket.setData(bf.array());    	    
+    	    datagramSocket.send(cmdpacket);			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	private static InetAddress socketAddress = null; // 服务监听个地址
 	private static DatagramSocket datagramSocket = null; // 连接对象
 	public static int sendLen = 1200;
