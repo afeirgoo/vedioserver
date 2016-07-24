@@ -128,8 +128,7 @@ class ServiceImpl implements Runnable {
 			     packet.setData(bf.array());
 		    	 UdpService.response(packet);
 		    	*/
-	    	    //更新车机的IP地址
-	    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
+	    	    //更新车机的IP地址	    	    
 	    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
 	    		break;
 	    	case 8: 
@@ -321,6 +320,36 @@ class ServiceImpl implements Runnable {
 		    	    UdpService.response(packet);
 		    	    //处理过返回包，就要将命令下发到车机设备
 		    	    UdpService.sendCMD(deviceID,flag);
+	    		}catch (Exception e) {
+	    			e.printStackTrace();
+	    		} 
+	    		
+	    		break;
+	    	case 27:
+	    		//这是车机发送的GIS信息
+	    		try{
+		    		ret = 27;
+		    		btTemp = new byte[4];
+		    	    System.arraycopy(pt, 5, btTemp, 0, 4);  //取出4个字节
+		    	    buffer =  ByteBuffer.wrap(btTemp); 
+		    	    deviceID = buffer.getInt();  //设备id 		    	    
+		    		btTemp = new byte[64];
+		    	    System.arraycopy(pt, 9, btTemp, 0, 64);  //取出64个字节
+		    	    flag = pt[len - 1]; //标志位是最后一字节    		    	    
+		    	    //返回确认包
+		    	    bf = ByteBuffer.allocate(10);
+		    	    temp = 10;
+		    	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
+		    	    bf.put((byte) 2);     //2，对应16进制是2H，表示该包的版本号
+		    	    bf.put((byte) 41);    //A，对应ASC是大写的A，表示该包的设备类型为服务器下发
+		    	    bf.put((byte) 27);    //27，对应16进制是1BH，表示该包是车机GIS信息的确认包		    	    
+		    	    bf.put(StreamTool.int2byte(deviceID)); // 当前包的索引
+		    	    bf.put((byte) 1);     //成功   	       	    
+		    	    //这里实际上要给发送方回复, 以便客户端继续发送
+		    	    packet.setData(bf.array());
+		    	    System.out.println(Arrays.toString(bf.array()));
+		    	    UdpService.response(packet);    	    
+		    	    
 	    		}catch (Exception e) {
 	    			e.printStackTrace();
 	    		} 
