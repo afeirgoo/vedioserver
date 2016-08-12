@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Date;
@@ -54,8 +55,8 @@ class ServiceImpl implements Runnable {
     	int deviceID = 0;
     	int UserID = 0;
     	int msgid = 0;
-    	//String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    
-    	String filePath = "D:\\apache-tomcat-8.0.33\\webapps\\VedioServer\\images\\";
+    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    
+    	//String filePath = "D:\\apache-tomcat-8.0.33\\webapps\\VedioServer\\images\\";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
@@ -129,7 +130,13 @@ class ServiceImpl implements Runnable {
 		    	 UdpService.response(packet);
 		    	*/
 	    	    //更新车机的IP地址	    	    
-	    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+	    	    //UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+				try {
+					UdpService.UpdateDeviceIpAddrDb(deviceID,packet.getAddress(),packet.getPort(),1);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 	    		break;
 	    	case 8: 
 	    	    //这是一个服务器命令,要提取ID维护设备状态
