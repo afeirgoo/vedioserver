@@ -55,8 +55,8 @@ class ServiceImpl implements Runnable {
     	int deviceID = 0;
     	int UserID = 0;
     	int msgid = 0;
-    	String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    
-    	//String filePath = "D:\\apache-tomcat-8.0.33\\webapps\\VedioServer\\images\\";
+    	//String filePath = "C:\\tomcat\\webapps\\VedioServer\\images\\";    
+    	String filePath = "D:\\apache-tomcat-8.0.33\\webapps\\VedioServer\\images\\";
     	//所有数据包的前5个字节，都是该数据包的长度和3字节包头,如果数据少于5个字节，就不用解析了，丢掉
     	if(null == pt || pt.length <= 5)
     	{
@@ -168,8 +168,13 @@ class ServiceImpl implements Runnable {
 	    	    packet.setData(bf.array());
 	    	    UdpService.response(packet);   	    
 	    	    //这是APP发的控制命令，所以不用保存更新ip记录
-	    	    UdpService.sendPwrCMD(deviceID,str_STA);  //服务器转发APP命令
-	    	  
+	    	    UdpService.sendPwrCMD(UserID,deviceID,str_STA);  //服务器转发APP命令
+	    	    try {
+					UdpService.UpdateUserAppIpAddrDb(UserID,packet.getAddress(),packet.getPort(),1);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 	    		break;
 	    	case 9:
 	    		//这是设备执行命令之后给服务器的返回信息,用于控制者知道设备执行情况
@@ -201,9 +206,15 @@ class ServiceImpl implements Runnable {
 	    	    packet.setData(ackbf.array());
 	    	    
 	    	    UdpService.response(packet);  		
-	    		
+	    	    UdpService.sendCMDACK2App(userID,ID,str_STA);  //服务器转发APP命令
 	    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
-	    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+	    	    //UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+	    	    try {
+					UdpService.UpdateDeviceIpAddrDb(deviceID,packet.getAddress(),packet.getPort(),1);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 	    		break;
 	    	case 10:
 	    		//这是发图片,要提取图片数据，等待完全收完后重组图片
@@ -289,8 +300,14 @@ class ServiceImpl implements Runnable {
 		    	    packet.setData(bf.array());
 		    	    System.out.println(Arrays.toString(bf.array()));
 		    	    UdpService.response(packet);
-		    	    //UdpService.UpdateIpAddrInfo(deviceID,packet.getAddress(),packet.getPort(),1);
-		    	    UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+		    	    
+		    	    //UdpService.UpdateIpAddrMap(deviceID,packet.getAddress(),packet.getPort(),1);
+		    	    try {
+						UdpService.UpdateDeviceIpAddrDb(deviceID,packet.getAddress(),packet.getPort(),1);
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 	    		}catch (Exception e) {
 	    			e.printStackTrace();
 	    		} 
@@ -325,8 +342,15 @@ class ServiceImpl implements Runnable {
 		    	    packet.setData(bf.array());
 		    	    System.out.println(Arrays.toString(bf.array()));
 		    	    UdpService.response(packet);
+		    	    try {
+						UdpService.UpdateUserAppIpAddrDb(userid,packet.getAddress(),packet.getPort(),1);
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 		    	    //处理过返回包，就要将命令下发到车机设备
 		    	    UdpService.sendCMD(deviceID,flag);
+		    	    
 	    		}catch (Exception e) {
 	    			e.printStackTrace();
 	    		} 
@@ -355,7 +379,13 @@ class ServiceImpl implements Runnable {
 		    	    //这里实际上要给发送方回复, 以便客户端继续发送
 		    	    packet.setData(bf.array());
 		    	    System.out.println(Arrays.toString(bf.array()));
-		    	    UdpService.response(packet);    	    
+		    	    UdpService.response(packet);    	
+		    	    try {
+						UdpService.UpdateDeviceIpAddrDb(deviceID,packet.getAddress(),packet.getPort(),1);
+					} catch (SQLException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 		    	    
 	    		}catch (Exception e) {
 	    			e.printStackTrace();

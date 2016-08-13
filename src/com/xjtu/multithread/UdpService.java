@@ -166,6 +166,53 @@ public class UdpService {
 		
 	    return;	
 	}
+	public static void UpdateUserAppIpAddrDb(int userid, InetAddress addr,int portno,int ty) throws SQLException
+	{
+		DbHelper.connect("192.168.1.100/mydb", "root", "root");
+		String querysql = "SELECT * from UserInfo where user_id = '";
+		querysql += String.valueOf(userid);
+		querysql += "';";
+		List<HashMap<String, String>> rs = DbHelper
+                .query(querysql);
+		if(rs.size() > 0)
+		{
+			//System.out.println(rs.get(0).get("ip_addr"));
+			//System.out.println(addr.getAddress().toString());
+			//System.out.println(String.valueOf(inet_aton(addr.getAddress())));
+			if(rs.get(0).get("ip_addr").equals(String.valueOf(inet_aton(addr.getAddress()))) && rs.get(0).get("portno").equals(String.valueOf(portno)))				
+			//if(rs.get(0).get("ip_addr") == String.valueOf(inet_aton(addr.getAddress())) && rs.get(0).get("portno") == String.valueOf(portno) )
+			{
+				//这是跟现有的一致，不做操作
+				System.out.println("the same as dataDB");
+			}
+			else
+			{
+				//IP or port not same
+				String updatesql = "update UserInfo set ip_addr = ";
+				updatesql += String.valueOf(inet_aton(addr.getAddress()));
+				updatesql += ", portno = ";
+				updatesql += String.valueOf(portno);
+				updatesql += " where user_id = '";
+				updatesql += String.valueOf(userid);
+				updatesql += "';";
+				DbHelper.excutesql(updatesql);
+			}
+		}
+		else {
+			//这个device首次发送消息
+			String insertsql = "insert into UserInfo values(";
+			insertsql += String.valueOf(userid);
+			insertsql += ",";
+			insertsql += String.valueOf(inet_aton(addr.getAddress()));
+			insertsql += ",";
+			insertsql += String.valueOf(portno);
+			insertsql += ",1";
+			insertsql += ");";
+			DbHelper.excutesql(insertsql);
+		}
+		
+	    return;	
+	}
 	public static long inet_aton(byte[] add) {
 		//byte[] bytes = add.getAddress();
 		long result = 0;
@@ -336,7 +383,7 @@ public class UdpService {
 		}
 	}
 	*/
-	public static void sendPwrCMD(int deviceid,byte[] cmd) 
+	public static void sendPwrCMD(int userid,int deviceid,byte[] cmd) 
 	{
 		String ipaddr;
 		int port;
@@ -359,16 +406,61 @@ public class UdpService {
 		try {
 			//组装datagramSocket
 			@SuppressWarnings("resource")			
-			byte[] cmdbuffer = new byte[6+cmd.length]; // 缓冲区
+			byte[] cmdbuffer = new byte[14+cmd.length]; // 缓冲区
 			DatagramPacket cmdpacket = new DatagramPacket(cmdbuffer, cmdbuffer.length);
 			cmdpacket.setAddress(InetAddress.getByName(ipaddr));
 			cmdpacket.setPort(port);
-			ByteBuffer bf = ByteBuffer.allocate(6+cmd.length);
-			short temp = (short)(6 + cmd.length);
+			ByteBuffer bf = ByteBuffer.allocate(14+cmd.length);
+			short temp = (short)(14 + cmd.length);
     	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
     	    bf.put((byte) 2);    //2，对应16进制是2H，表示该包的版本号
     	    bf.put((byte) 53);    //S，对应ASC是大写的S，表示该包的设备类型为服务器下发
-    	    bf.put((byte) 8);    //8，对应16进制是08H，表示该包是APP命令    	   
+    	    bf.put((byte) 8);    //8，对应16进制是08H，表示该包是APP命令    	 
+    	    bf.put(StreamTool.int2byte(userid));    // 总包数
+    	    bf.put(StreamTool.int2byte(deviceid)); // 当前包的索引
+    	    bf.put(cmd);     //命令   	
+    	    bf.put((byte) 5);     //结尾的5H   	    
+    	    cmdpacket.setData(bf.array());    	    
+    	    datagramSocket.send(cmdpacket);			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public static void sendCMDACK2App(int userid,int deviceid,byte[] cmd) 
+	{
+		String ipaddr;
+		int port;
+		//在数据库中查询这个设备的IP端口,找到了就可以发送cmd，找不到就直接退出
+		DbHelper.connect("192.168.1.100/mydb", "root", "root");
+		String querysql = "SELECT * from UserInfo where user_id = '";
+		querysql += String.valueOf(userid);
+		querysql += "';";
+		List<HashMap<String, String>> rs = DbHelper.query(querysql);
+		if(rs.size() > 0)
+		{
+			ipaddr = inet_ntoa(Long.parseLong(rs.get(0).get("ip_addr")));
+			port = Integer.parseInt(rs.get(0).get("portno"));
+			
+		}		
+		else
+		{
+			return;
+		}
+		try {
+			//组装datagramSocket
+			@SuppressWarnings("resource")			
+			byte[] cmdbuffer = new byte[14+cmd.length]; // 缓冲区
+			DatagramPacket cmdpacket = new DatagramPacket(cmdbuffer, cmdbuffer.length);
+			cmdpacket.setAddress(InetAddress.getByName(ipaddr));
+			cmdpacket.setPort(port);
+			ByteBuffer bf = ByteBuffer.allocate(14+cmd.length);
+			short temp = (short)(14 + cmd.length);
+    	    bf.put(StreamTool.short2byte(temp));    // 总长度   //可能还需要确认，修改
+    	    bf.put((byte) 2);    //2，对应16进制是2H，表示该包的版本号
+    	    bf.put((byte) 53);    //S，对应ASC是大写的S，表示该包的设备类型为服务器下发
+    	    bf.put((byte) 9);    //9，对应16进制是09H，表示该包是设备返回的反馈包    	 
+    	    bf.put(StreamTool.int2byte(userid));    // 总包数
+    	    bf.put(StreamTool.int2byte(deviceid)); // 当前包的索引
     	    bf.put(cmd);     //命令   	
     	    bf.put((byte) 5);     //结尾的5H   	    
     	    cmdpacket.setData(bf.array());    	    
